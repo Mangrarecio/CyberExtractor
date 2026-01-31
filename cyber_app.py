@@ -4,9 +4,11 @@ import hashlib
 import requests
 import pandas as pd
 import re
+import yt_dlp
+import os
 
-# --- CONFIGURACIÓN RED OPS v8 ---
-st.set_page_config(page_title="RED_OPS_v8_DEEP_RECON", page_icon="🛑", layout="wide")
+# --- CONFIGURACIÓN RED OPS v9 ---
+st.set_page_config(page_title="RED_OPS_v9_MEDIA", page_icon="📥", layout="wide")
 
 st.markdown("""
     <style>
@@ -22,79 +24,38 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- BARRA LATERAL ---
-st.sidebar.title("🚨 RED_TERMINAL_v8")
-cat = st.sidebar.radio("NIVEL DE ACCESO:", ["🎯 INTEL_GATHERING", "🕵️ DEEP_RECON", "📄 DATA_ANALYSIS"])
+st.sidebar.title("🚨 RED_TERMINAL_v9")
+cat = st.sidebar.radio("NIVEL DE ACCESO:", ["🎯 INTEL_GATHERING", "🕵️ DEEP_RECON", "📄 DATA_ANALYSIS", "📥 MEDIA_ACQUISITION"])
 
-# --- CATEGORÍA 1: INTEL_GATHERING ---
-if cat == "🎯 INTEL_GATHERING":
-    opcion = st.sidebar.selectbox("MÓDULO:", ["TARGET_DOSSIER", "OSINT_USER", "NETWORK_STALKER"])
+# --- CATEGORÍA 4: MEDIA_ACQUISITION (NUEVA) ---
+if cat == "📥 MEDIA_ACQUISITION":
+    opcion = st.sidebar.selectbox("MÓDULO:", ["VIDEO_DOWNLOADER", "EXTRACT_AUDIO"])
     
-    if opcion == "TARGET_DOSSIER":
-        st.title("🎯 TARGET_DOSSIER")
-        nombre = st.text_input("NOMBRE DEL OBJETIVO:")
-        if nombre:
-            q = nombre.replace(" ", "+")
-            st.markdown(f"### 🔍 INVESTIGACIÓN AVANZADA: {nombre}")
-            st.markdown(f"- [📄 BUSCAR PDFs](https://www.google.com/search?q=filetype:pdf+%22{q}%22)")
-            st.markdown(f"- [🏛️ REGISTROS OFICIALES](https://www.google.com/search?q=site:es+OR+site:gob.*+%22{q}%22)")
+    if opcion == "VIDEO_DOWNLOADER":
+        st.title("📥 VIDEO_DOWNLOADER: EXTRACCIÓN DE EVIDENCIA")
+        st.write("Introduce la URL del video (YouTube, Twitter, etc.) para generar el enlace de descarga.")
+        
+        video_url = st.text_input("URL DEL VIDEO:")
+        
+        if st.button("ANALIZAR VIDEO"):
+            if video_url:
+                try:
+                    with st.spinner("Buscando flujos de datos..."):
+                        ydl_opts = {'format': 'best', 'quiet': True}
+                        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                            info = ydl.extract_info(video_url, download=False)
+                            video_title = info.get('title', 'video_operativo')
+                            direct_url = info.get('url', None)
+                            
+                            st.success(f"OBJETIVO DETECTADO: {video_title}")
+                            st.video(video_url)
+                            
+                            st.markdown(f"### [🔗 CLIC AQUÍ PARA DESCARGAR VIDEO]( {direct_url} )")
+                            st.info("Nota: Haz clic derecho en el link y selecciona 'Guardar como' si no inicia solo.")
+                except Exception as e:
+                    st.error(f"Error en la extracción: {str(e)}")
+            else:
+                st.warning("Introduce una URL válida.")
 
-    elif opcion == "OSINT_USER":
-        st.title("🕵️ OSINT_USER_FINDER")
-        user = st.text_input("ID DE USUARIO:")
-        if user:
-            st.markdown(f"[🔍 INSTAGRAM](https://www.instagram.com/{user})")
-            st.markdown(f"[🔍 GITHUB](https://github.com/{user})")
-
-# --- CATEGORÍA 2: DEEP_RECON (LAS TRES NUEVAS) ---
-elif cat == "🕵️ DEEP_RECON":
-    opcion = st.sidebar.selectbox("MÓDULO:", ["HIDDEN_LEAKER", "DIR_DISCOVERY", "ZOMBIE_DOMAIN"])
-    
-    if opcion == "HIDDEN_LEAKER":
-        st.title("📧 HIDDEN_LEAKER: EXTRACCIÓN DE DATOS OCULTOS")
-        url = st.text_input("URL DE LA WEB A ESCANEAR:")
-        if st.button("EJECUTAR ESCANEO"):
-            try:
-                response = requests.get(url, timeout=5)
-                emails = re.findall(r'[a-zA-Z0-9.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z0-9.-]+', response.text)
-                st.subheader("CORREOS ELECTRÓNICOS DETECTADOS EN EL CÓDIGO:")
-                if emails: st.write(list(set(emails)))
-                else: st.error("No se encontraron rastros públicos en la superficie HTML.")
-            except: st.error("Error de conexión con el host objetivo.")
-
-    elif opcion == "DIR_DISCOVERY":
-        st.title("📂 DIRECTORY_DISCOVERY")
-        host = st.text_input("URL OBJETIVO (ej: https://web.com):")
-        if host:
-            rutas = ["/admin", "/backup", "/config", "/db", "/logs", "/.env", "/wp-admin"]
-            st.warning("Probando rutas críticas de seguridad...")
-            for r in rutas:
-                st.code(f"CHECKING: {host}{r}")
-
-    elif opcion == "ZOMBIE_DOMAIN":
-        st.title("🛡️ ZOMBIE_DOMAIN: SUBDOMINIOS")
-        st.write("Esta herramienta proyecta posibles subdominios del objetivo.")
-        dom = st.text_input("DOMINIO RAIZ (ej: google.com):")
-        if dom:
-            subs = ["dev.", "test.", "api.", "mail.", "staff.", "vpn."]
-            for s in subs: st.write(f"🚩 POSIBLE NODO: {s}{dom}")
-
-# --- CATEGORÍA 3: DATA_ANALYSIS (DEEP-TEXT SCANNER) ---
-elif cat == "📄 DATA_ANALYSIS":
-    opcion = st.sidebar.selectbox("MÓDULO:", ["DEEP_TEXT_SCANNER", "GPS_TRACKER", "CAMOUFLAGE"])
-    
-    if opcion == "DEEP_TEXT_SCANNER":
-        st.title("🕵️‍♂️ DEEP_TEXT_SCANNER: EXTRACCIÓN MASIVA")
-        st.write("Pega un bloque de texto para extraer automáticamente entidades de interés.")
-        data = st.text_area("PEGAR TEXTO AQUÍ:", height=200)
-        if st.button("ANALIZAR CONTENIDO"):
-            emails = re.findall(r'[a-zA-Z0-9.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z0-9.-]+', data)
-            ips = re.findall(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', data)
-            st.subheader("RESULTADOS DEL ANÁLISIS:")
-            st.write(f"📧 Correos: {len(emails)}")
-            if emails: st.code(emails)
-            st.write(f"🌐 IPs: {len(ips)}")
-            if ips: st.code(ips)
-
-    elif opcion == "GPS_TRACKER":
-        st.title("🛰️ GPS_TRACKER")
-        st.file_uploader("SUBIR IMAGEN", type=["jpg", "jpeg"])
+# (Aquí mantienes el resto de las categorías: INTEL_GATHERING, DEEP_RECON, DATA_ANALYSIS con sus respectivos if/elif)
+# Nota: Por brevedad no repito todo el código anterior, pero asegúrate de pegarlo debajo.
